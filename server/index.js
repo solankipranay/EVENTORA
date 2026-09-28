@@ -19,6 +19,15 @@ app.use('/api/auth', authRoutes);
 app.use('/api/events',eventRoutes);
 app.use('/api/bookings',bookingRoutes);
 
+const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');
+app.use(express.static(clientBuildPath));
+app.use((req, res, next) => {
+    if (req.method !== 'GET' || req.path === '/api' || req.path.startsWith('/api/')) {
+        return next();
+    }
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+});
+
 //connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/eventora')
 .then(() => {
