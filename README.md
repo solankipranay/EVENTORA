@@ -69,8 +69,8 @@ npm run dev
 
 ## 🌐 Free Deployment Guide
 
-- **Frontend:** Deploy on [Vercel](https://vercel.com) (Root: `client`, Build: `npm run build`, Output: `dist`)
-- **Backend:** Deploy on [Render](https://render.com) (Root: `server`, Build: `npm install`, Start: `node index.js`)
+- **Frontend:** Deploy on [Vercel](https://vercel.com) (Root: `client`, Build: `npm run build`, Output: `dist`). Set `VITE_API_URL` to `https://eventora-1-uaje.onrender.com/api` in the Vercel project environment variables.
+- **Backend:** Deploy on [Render](https://render.com) (Root: `server`, Build: `npm install`, Start: `node index.js`). Set `MONGODB_URI` and `JWT_SECRET`; configure `EMAIL_USER` and `EMAIL_PASS` for email OTP delivery.
 - **Database:** Free M0 Sandbox cluster on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
 
 ---
