@@ -2,6 +2,7 @@ const Booking = require('../models/Booking');
 const Event = require('../models/Event');
 const OTP = require('../models/OTP');
 const { sendBookingEmail, sendOTPEmail } = require('../utils/email');
+const parsePagination = require('../utils/pagination');
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -13,7 +14,12 @@ exports.sendBookingOTP = async (req, res) => {
         await sendOTPEmail(req.user.email, otp, 'event_booking');
         res.json({ message: 'OTP sent successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Error sending OTP', error: error.message });
+        console.error('Booking OTP request failed:', error);
+        res.status(error.message === 'Unable to send verification email' ? 503 : 500).json({
+            message: error.message === 'Unable to send verification email'
+                ? 'Unable to send verification email. Please try again.'
+                : 'Error sending OTP'
+        });
     }
 };
 
@@ -60,13 +66,18 @@ exports.bookEvent = async (req, res) => {
 
         res.status(201).json({ message: 'Booking request submitted', booking });
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error('Booking request failed:', error);
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
 exports.confirmBooking = async (req, res) => {
     try {
-        const { paymentStatus } = req.body; // 'paid' or 'not_paid'
+        const { paymentStatus } = req.body;
+        if (paymentStatus !== undefined && !['paid', 'not_paid'].includes(paymentStatus)) {
+            return res.status(400).json({ message: 'Payment status must be paid or not_paid' });
+        }
+
         const booking = await Booking.findById(req.params.id).populate('userId').populate('eventId');
         if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
@@ -77,41 +88,118 @@ exports.confirmBooking = async (req, res) => {
             return res.status(404).json({ message: 'Associated event no longer exists' });
         }
 
-        const event = await Event.findById(booking.eventId._id);
-        if (!event) return res.status(404).json({ message: 'Event not found' });
-
-        if (event.availableSeats <= 0) {
+        const event = await Event.findOneAndUpdate(
+            { _id: booking.eventId._id, availableSeats: { $gt: 0 } },
+            { $inc: { availableSeats: -1 } },
+            { new: true }
+        );
+        if (!event) {
+            const existingEvent = await Event.exists({ _id: booking.eventId._id });
+            if (!existingEvent) return res.status(404).json({ message: 'Event not found' });
             return res.status(400).json({ message: 'No seats available to confirm this booking' });
         }
 
-        booking.status = 'confirmed';
-        if (paymentStatus) {
-            booking.paymentStatus = paymentStatus;
+        const update = { status: 'confirmed' };
+        if (paymentStatus) update.paymentStatus = paymentStatus;
+        let confirmedBooking;
+        try {
+            confirmedBooking = await Booking.findOneAndUpdate(
+                { _id: booking._id, status: 'pending' },
+                { $set: update },
+                { new: true }
+            );
+        } catch (error) {
+            await Event.updateOne({ _id: event._id }, { $inc: { availableSeats: 1 } });
+            throw error;
         }
-        await booking.save();
-
-        event.availableSeats = Math.max(0, event.availableSeats - 1);
-        await event.save();
-
-        // Send email on admin confirmation
-        if (booking.userId && booking.userId.email) {
-            await sendBookingEmail(booking.userId.email, booking.userId.name, booking.eventId.title);
+        if (!confirmedBooking) {
+            await Event.updateOne({ _id: event._id }, { $inc: { availableSeats: 1 } });
+            return res.status(409).json({ message: 'Booking status changed. Refresh and try again.' });
         }
 
-        res.json({ message: 'Booking confirmed successfully', booking });
+        const notificationSent = booking.userId?.email
+            ? await sendBookingEmail(booking.userId.email, booking.userId.name, booking.eventId.title)
+            : false;
+
+        res.json({
+            message: notificationSent
+                ? 'Booking confirmed successfully'
+                : 'Booking confirmed, but the email notification could not be sent',
+            notificationSent,
+            booking: confirmedBooking
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error('Booking confirmation failed:', error);
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
 exports.getMyBookings = async (req, res) => {
     try {
-        const bookings = req.user.role === 'admin'
-            ? await Booking.find().populate('eventId').populate('userId', 'name email').sort({ createdAt: -1 })
-            : await Booking.find({ userId: req.user.id }).populate('eventId').sort({ createdAt: -1 });
-        res.json(bookings);
+        const filter = req.user.role === 'admin' ? {} : { userId: req.user.id };
+        const { page, limit, skip } = parsePagination(req.query);
+        let bookingQuery = Booking.find(filter)
+            .populate('eventId')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+        if (req.user.role === 'admin') {
+            bookingQuery = bookingQuery.populate('userId', 'name email');
+        }
+        const [items, total] = await Promise.all([
+            bookingQuery,
+            Booking.countDocuments(filter)
+        ]);
+        res.json({ items, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error('Booking list request failed:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+exports.getBookingSummary = async (req, res) => {
+    try {
+        const [[summary], [confirmedUsers]] = await Promise.all([
+            Booking.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        totalRevenue: {
+                            $sum: {
+                                $cond: [
+                                    { $and: [{ $eq: ['$paymentStatus', 'paid'] }, { $eq: ['$status', 'confirmed'] }] },
+                                    '$amount',
+                                    0
+                                ]
+                            }
+                        },
+                        pendingRequests: {
+                            $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+                        }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        totalRevenue: 1,
+                        pendingRequests: 1
+                    }
+                }
+            ]),
+            Booking.aggregate([
+                { $match: { status: 'confirmed', paymentStatus: 'paid' } },
+                { $group: { _id: '$userId' } },
+                { $count: 'count' }
+            ])
+        ]);
+        res.json({
+            totalRevenue: summary?.totalRevenue || 0,
+            pendingRequests: summary?.pendingRequests || 0,
+            confirmedPassHolders: confirmedUsers?.count || 0
+        });
+    } catch (error) {
+        console.error('Booking summary request failed:', error);
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
@@ -125,21 +213,26 @@ exports.cancelBooking = async (req, res) => {
         if (booking.status === 'cancelled') return res.status(400).json({ message: 'Already cancelled' });
 
         const wasConfirmed = booking.status === 'confirmed';
-
-        booking.status = 'cancelled';
-        await booking.save();
+        const cancelledBooking = await Booking.findOneAndUpdate(
+            { _id: booking._id, status: booking.status },
+            { $set: { status: 'cancelled' } },
+            { new: true }
+        );
+        if (!cancelledBooking) {
+            return res.status(409).json({ message: 'Booking status changed. Refresh and try again.' });
+        }
 
         // Only restore the seat if it was actually confirmed and deducted
         if (wasConfirmed) {
-            const event = await Event.findById(booking.eventId);
-            if (event) {
-                event.availableSeats = Math.min(event.totalSeats, event.availableSeats + 1);
-                await event.save();
-            }
+            await Event.updateOne(
+                { _id: booking.eventId, $expr: { $lt: ['$availableSeats', '$totalSeats'] } },
+                { $inc: { availableSeats: 1 } }
+            );
         }
 
         res.json({ message: 'Booking cancelled successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error('Booking cancellation failed:', error);
+        res.status(500).json({ message: 'Server Error' });
     }
 };

@@ -15,21 +15,28 @@ const EventDetail = () => {
     const [showOTP, setShowOTP] = useState(false);
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
+    const [reloadKey, setReloadKey] = useState(0);
 
     useEffect(() => {
+        const controller = new AbortController();
         const fetchEvent = async () => {
             try {
-                const { data } = await api.get(`/events/${id}`);
+                const { data } = await api.get(`/events/${id}`, { signal: controller.signal });
                 setEvent(data);
             } catch (err) {
-                console.error(err);
-                setError('Failed to load pass details.');
+                if (!controller.signal.aborted) {
+                    console.error(err);
+                    setError('Failed to load pass details.');
+                }
             } finally {
-                setLoading(false);
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
             }
         };
         fetchEvent();
-    }, [id]);
+        return () => controller.abort();
+    }, [id, reloadKey]);
 
     const handleResendOTP = async () => {
         setBookingLoading(true);
@@ -72,12 +79,28 @@ const EventDetail = () => {
     };
 
     if (loading) return <div className="text-center py-20 text-xl font-semibold text-amber-700">Loading Garba Pass details...</div>;
-    if (error && !event) return <div className="text-center py-20 text-xl text-red-500">{error || 'Pass details not found'}</div>;
+    if (error && !event) {
+        return (
+            <div role="alert" className="mx-auto max-w-lg py-12 text-center text-red-600">
+                <p className="text-lg font-semibold">{error}</p>
+                <button
+                    type="button"
+                    onClick={() => {
+                        setLoading(true);
+                        setReloadKey(current => current + 1);
+                    }}
+                    className="mt-4 rounded-xl bg-amber-600 px-5 py-3 font-bold text-white hover:bg-amber-700"
+                >
+                    Try again
+                </button>
+            </div>
+        );
+    }
 
     const isSoldOut = event.availableSeats <= 0;
 
     return (
-        <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden mt-6 border border-amber-100">
+        <div className="max-w-4xl mx-auto bg-white rounded-2xl sm:rounded-3xl shadow-xl overflow-hidden mt-3 sm:mt-6 border border-amber-100">
             {event.image ? (
                 <div className="relative h-80 md:h-96 overflow-hidden">
                     <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
@@ -94,7 +117,7 @@ const EventDetail = () => {
                 </div>
             )}
 
-            <div className="p-8 md:p-12">
+            <div className="p-4 sm:p-8 md:p-12">
                 <div className="flex flex-col lg:flex-row justify-between items-start mb-8 gap-8">
                     <div className="flex-1">
                         <span className="text-xs font-bold text-amber-600 uppercase tracking-widest block mb-2">The Rangilo Garba Mahotsav</span>
@@ -102,7 +125,7 @@ const EventDetail = () => {
                         <p className="text-gray-600 text-base md:text-lg leading-relaxed mb-6">{event.description}</p>
                     </div>
 
-                    <div className="bg-gradient-to-b from-amber-50/50 to-orange-50/30 p-6 md:p-8 rounded-2xl border border-amber-200/80 min-w-[320px] w-full lg:w-auto shrink-0 shadow-sm">
+                    <div className="bg-gradient-to-b from-amber-50/50 to-orange-50/30 p-4 sm:p-6 md:p-8 rounded-2xl border border-amber-200/80 min-w-0 w-full lg:w-auto shrink-0 shadow-sm">
                         <h3 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2 border-b border-amber-200/60 pb-3">
                             <FaTicketAlt className="text-amber-600" /> Pass Summary
                         </h3>

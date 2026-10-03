@@ -9,4 +9,8 @@ const bookingSchema = new mongoose.Schema({
     bookedAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 
+bookingSchema.index({ createdAt: -1 });
+bookingSchema.index({ userId: 1, createdAt: -1 });
+bookingSchema.index({ status: 1, paymentStatus: 1, userId: 1 });
+
 module.exports = mongoose.model('Booking', bookingSchema);

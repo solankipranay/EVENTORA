@@ -7,7 +7,10 @@ const { sendOTPEmail } = require('../utils/email');
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 const generateToken = (id, role) => {
-    return jwt.sign({ id, role }, process.env.JWT_SECRET || 'eventora_secret_key', { expiresIn: '30d' });
+    if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET is not configured');
+    }
+    return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
 exports.register = async (req, res) => {
@@ -60,7 +63,12 @@ exports.register = async (req, res) => {
             email: user.email
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error('Registration failed:', error);
+        res.status(error.message === 'Unable to send verification email' ? 503 : 500).json({
+            message: error.message === 'Unable to send verification email'
+                ? 'Unable to send verification email. Please try again.'
+                : 'Server Error'
+        });
     }
 };
 
@@ -94,7 +102,12 @@ exports.login = async (req, res) => {
             token: generateToken(user.id, user.role)
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error('Login failed:', error);
+        res.status(error.message === 'Unable to send verification email' ? 503 : 500).json({
+            message: error.message === 'Unable to send verification email'
+                ? 'Unable to send verification email. Please try again.'
+                : 'Server Error'
+        });
     }
 };
 
@@ -127,7 +140,8 @@ exports.verifyOTP = async (req, res) => {
             token: generateToken(user.id, user.role)
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error('OTP verification failed:', error);
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
@@ -148,6 +162,11 @@ exports.resendOTP = async (req, res) => {
 
         res.json({ message: 'New verification OTP sent to your email.' });
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error('OTP resend failed:', error);
+        res.status(error.message === 'Unable to send verification email' ? 503 : 500).json({
+            message: error.message === 'Unable to send verification email'
+                ? 'Unable to send verification email. Please try again.'
+                : 'Server Error'
+        });
     }
 };

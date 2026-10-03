@@ -38,6 +38,8 @@ cd eventora
 npm run install:all
 ```
 
+Run backend unit tests with `npm test --prefix server`.
+
 ### 3. Environment Setup
 Create `.env` inside `server/`:
 ```env
@@ -54,8 +56,9 @@ VITE_API_URL=http://localhost:5000/api
 ```
 
 ### 4. Seed Dummy Data (Optional)
+The seed command deletes and replaces the database contents, so only run it against a disposable development database. Set `SEED_ADMIN_PASSWORD` and `SEED_USER_PASSWORD` in `server/.env` first. It refuses to run in production and requires the explicit `--reset` flag:
 ```bash
-npm run seed
+npm run seed --prefix server -- --reset
 ```
 
 ### 5. Run Concurrently (Client + Server)
@@ -71,7 +74,10 @@ npm run dev
 
 - **Frontend:** Deploy on [Vercel](https://vercel.com) (Root: `client`, Build: `npm run build`, Output: `dist`). Set `VITE_API_URL` to `https://eventora-1-uaje.onrender.com/api` in the Vercel project environment variables.
 - **Backend:** Deploy on [Render](https://render.com) (Root: `server`, Build: `npm install`, Start: `node index.js`). Set `MONGODB_URI` and `JWT_SECRET`; configure `EMAIL_USER` and `EMAIL_PASS` for email OTP delivery.
+- Use a long, randomly generated `JWT_SECRET`; the backend refuses to start if it is missing. No payment provider is integrated yet; booking confirmation and payment status are currently managed in the admin portal.
 - **Database:** Free M0 Sandbox cluster on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+
+Event and booking list endpoints accept `page` and `limit` query parameters and return `{ items, total, page, limit, totalPages }`. Page size is capped at 100.
 
 ---
 

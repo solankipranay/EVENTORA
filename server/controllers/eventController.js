@@ -1,18 +1,33 @@
 const Event = require('../models/Event');
 const Booking = require('../models/Booking');
+const parsePagination = require('../utils/pagination');
+const EVENT_PUBLIC_FIELDS = 'title description date location category totalSeats availableSeats image ticketPrice';
 
 exports.getEvents = async (req, res) => {
     try {
         const filters = {};
-        if (req.query.category && req.query.category !== 'All') {
+        if (typeof req.query.category === 'string' && req.query.category !== 'All') {
             filters.category = req.query.category;
         }
-        if (req.query.search) {
-            filters.title = { $regex: req.query.search.trim(), $options: 'i' };
+        if (typeof req.query.search === 'string') {
+            const search = req.query.search.trim().slice(0, 100);
+            if (search) {
+                const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                filters.title = { $regex: escapedSearch, $options: 'i' };
+            }
         }
 
-        const events = await Event.find(filters).populate('createdBy', 'name email').sort({ date: 1 });
-        res.json(events);
+        const { page, limit, skip } = parsePagination(req.query);
+        const [events, total] = await Promise.all([
+            Event.find(filters)
+                .select(EVENT_PUBLIC_FIELDS)
+                .sort({ date: 1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            Event.countDocuments(filters)
+        ]);
+        res.json({ items: events, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
@@ -20,7 +35,7 @@ exports.getEvents = async (req, res) => {
 
 exports.getEventById = async (req, res) => {
     try {
-        const event = await Event.findById(req.params.id).populate('createdBy', 'name email');
+        const event = await Event.findById(req.params.id).select(EVENT_PUBLIC_FIELDS).lean();
         if (!event) return res.status(404).json({ message: 'Event not found' });
         res.json(event);
     } catch (error) {

@@ -5,6 +5,10 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET must be configured before starting the server');
+}
+
 const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
 const bookingRoutes = require('./routes/bookings');

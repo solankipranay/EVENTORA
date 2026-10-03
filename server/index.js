@@ -9,6 +9,10 @@ const bookingRoutes = require('./routes/bookings.js');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
+if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET must be configured before starting the server');
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json());

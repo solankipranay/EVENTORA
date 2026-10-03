@@ -7,15 +7,20 @@ const Booking = require('./models/Booking');
 
 dotenv.config();
 
+const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@example.test';
+const userEmail = process.env.SEED_USER_EMAIL || 'user@example.test';
+const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+const userPassword = process.env.SEED_USER_PASSWORD;
+
 const users = [
-    { name: 'Pranay Solanki (Admin)', email: 'solankipranay34@gmail.com', password: 'password123', role: 'admin' },
-    { name: 'Pranay Solanki', email: 'user@therangilo.com', password: 'password123', role: 'user' },
-    { name: 'Aarav Patel', email: 'aarav@therangilo.com', password: 'password123', role: 'user' },
-    { name: 'Diya Shah', email: 'diya@therangilo.com', password: 'password123', role: 'user' },
-    { name: 'Rohan Mehta', email: 'rohan@therangilo.com', password: 'password123', role: 'user' },
-    { name: 'Ananya Joshi', email: 'ananya@therangilo.com', password: 'password123', role: 'user' },
-    { name: 'Karan Trivedi', email: 'karan@therangilo.com', password: 'password123', role: 'user' },
-    { name: 'Priya Desai', email: 'priya@therangilo.com', password: 'password123', role: 'user' }
+    { name: 'Eventora Demo Admin', email: 'solankipranay34@gmail.com', password: 'password123', role: 'admin' },
+    { name: 'Eventora Demo User', email: 'userdemo@gmail.com', password: 'password123', role: 'user' },
+    { name: 'Aarav Patel', email: 'aarav@example.test', password: userPassword, role: 'user' },
+    { name: 'Diya Shah', email: 'diya@example.test', password: userPassword, role: 'user' },
+    { name: 'Rohan Mehta', email: 'rohan@example.test', password: userPassword, role: 'user' },
+    { name: 'Ananya Joshi', email: 'ananya@example.test', password: userPassword, role: 'user' },
+    { name: 'Karan Trivedi', email: 'karan@example.test', password: userPassword, role: 'user' },
+    { name: 'Priya Desai', email: 'priya@example.test', password: userPassword, role: 'user' }
 ];
 
 
@@ -113,6 +118,16 @@ const events = [
 ];
 
 const seedDatabase = async () => {
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('The destructive seed script cannot run in production');
+    }
+    if (!process.argv.includes('--reset')) {
+        throw new Error('This script deletes existing data. Re-run with --reset only for a disposable database.');
+    }
+    if (!adminPassword || !userPassword) {
+        throw new Error('SEED_ADMIN_PASSWORD and SEED_USER_PASSWORD must be set before seeding');
+    }
+
     try {
         await mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/eventora');
         console.log('\n✅ MongoDB connection open...');
@@ -182,19 +197,16 @@ const seedDatabase = async () => {
         await Booking.insertMany(bookingsData);
         console.log(`🎫 Inserted ${bookingsData.length} randomized dummy Garba pass bookings.`);
 
-        console.log('\n🚀 The Rangilo database seeded successfully!');
-        console.log('-------------------------------------------');
-        console.log('Admin & Main User: solankipranay34@gmail.com');
-        console.log('Demo User Email:   user@therangilo.com');
-        console.log('Password for all:  password123');
-        console.log('-------------------------------------------\n');
-
-
-        process.exit();
+        console.log('\nEventora demo database seeded successfully.');
     } catch (error) {
         console.error('❌ Error seeding data:', error);
-        process.exit(1);
+        process.exitCode = 1;
+    } finally {
+        await mongoose.disconnect();
     }
 };
 
-seedDatabase();
+seedDatabase().catch((error) => {
+    console.error('❌ Seed refused:', error.message);
+    process.exitCode = 1;
+});

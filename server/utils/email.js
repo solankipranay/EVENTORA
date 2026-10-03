@@ -25,20 +25,14 @@ const sendBookingEmail = async (userEmail, userName, eventTitle) => {
       `
         };
         await transporter.sendMail(mailOptions);
-        console.log('Email sent successfully to', userEmail);
+        return true;
     } catch (error) {
-        console.error('Error sending email:', error);
+        console.error('Booking confirmation email delivery failed:', error);
+        return false;
     }
 };
 
 const sendOTPEmail = async (userEmail, otp, type) => {
-    console.log(`\n========================================`);
-    console.log(`🔑 [THE RANGILO GARBA OTP CODE]`);
-    console.log(`Target Email: ${userEmail}`);
-    console.log(`Action Type : ${type}`);
-    console.log(`OTP Code    : ${otp}`);
-    console.log(`========================================\n`);
-
     try {
         const title = type === 'account_verification' ? 'Verify your The Rangilo Account' : 'The Rangilo Garba Pass Verification';
         const msg = type === 'account_verification'
@@ -61,9 +55,9 @@ const sendOTPEmail = async (userEmail, otp, type) => {
             `
         };
         await transporter.sendMail(mailOptions);
-        console.log(`OTP sent to ${userEmail} for ${type}`);
     } catch (error) {
-        console.error('Error sending OTP email:', error);
+        console.error('Verification email delivery failed:', error);
+        throw new Error('Unable to send verification email');
     }
 };
 

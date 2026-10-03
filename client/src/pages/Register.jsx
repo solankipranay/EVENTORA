@@ -51,7 +51,7 @@ const Register = () => {
     };
 
     return (
-        <div className="max-w-md mx-auto mt-12 bg-white p-8 rounded-3xl shadow-xl border border-amber-100">
+        <div className="max-w-md mx-auto mt-6 sm:mt-12 bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-amber-100">
             <div className="text-center mb-8">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-red-500 flex items-center justify-center text-white text-xl mx-auto mb-3 shadow-lg shadow-amber-500/30">
                     <FaMusic />

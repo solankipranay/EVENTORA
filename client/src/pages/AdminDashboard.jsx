@@ -10,6 +10,16 @@ const AdminDashboard = () => {
     const [events, setEvents] = useState([]);
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
+    const [summary, setSummary] = useState({ totalRevenue: 0, confirmedPassHolders: 0, pendingRequests: 0 });
+    const [eventsTotal, setEventsTotal] = useState(0);
+    const [bookingsTotal, setBookingsTotal] = useState(0);
+    const [eventsPage, setEventsPage] = useState(1);
+    const [bookingsPage, setBookingsPage] = useState(1);
+    const [eventsHaveMore, setEventsHaveMore] = useState(false);
+    const [bookingsHaveMore, setBookingsHaveMore] = useState(false);
+    const [loadingMoreEvents, setLoadingMoreEvents] = useState(false);
+    const [loadingMoreBookings, setLoadingMoreBookings] = useState(false);
 
     const [showEventForm, setShowEventForm] = useState(false);
     const [formData, setFormData] = useState({
@@ -18,18 +28,60 @@ const AdminDashboard = () => {
 
     const fetchData = useCallback(async () => {
         try {
-            const [eventsRes, bookingsRes] = await Promise.all([
-                api.get('/events'),
-                api.get('/bookings/my') // Admin gets all bookings
+            const [eventsRes, bookingsRes, summaryRes] = await Promise.all([
+                api.get('/events', { params: { page: 1, limit: 25 } }),
+                api.get('/bookings/my', { params: { page: 1, limit: 25 } }),
+                api.get('/bookings/summary')
             ]);
-            setEvents(eventsRes.data);
-            setBookings(bookingsRes.data);
+            setLoadError('');
+            setEvents(eventsRes.data.items);
+            setEventsTotal(eventsRes.data.total);
+            setEventsHaveMore(eventsRes.data.page < eventsRes.data.totalPages);
+            setEventsPage(eventsRes.data.page);
+            setBookings(bookingsRes.data.items);
+            setBookingsTotal(bookingsRes.data.total);
+            setBookingsHaveMore(bookingsRes.data.page < bookingsRes.data.totalPages);
+            setBookingsPage(bookingsRes.data.page);
+            setSummary(summaryRes.data);
         } catch (error) {
             console.error('Error fetching admin data', error);
+            setLoadError('Admin data could not be loaded. Check your connection and try again.');
         } finally {
             setLoading(false);
         }
     }, []);
+
+    const loadMoreEvents = async () => {
+        setLoadingMoreEvents(true);
+        try {
+            const nextPage = eventsPage + 1;
+            const { data } = await api.get('/events', { params: { page: nextPage, limit: 25 } });
+            setEvents(current => [...current, ...data.items]);
+            setEventsPage(data.page);
+            setEventsHaveMore(data.page < data.totalPages);
+        } catch (error) {
+            console.error('Error loading more events', error);
+            setLoadError('More events could not be loaded. Please try again.');
+        } finally {
+            setLoadingMoreEvents(false);
+        }
+    };
+
+    const loadMoreBookings = async () => {
+        setLoadingMoreBookings(true);
+        try {
+            const nextPage = bookingsPage + 1;
+            const { data } = await api.get('/bookings/my', { params: { page: nextPage, limit: 25 } });
+            setBookings(current => [...current, ...data.items]);
+            setBookingsPage(data.page);
+            setBookingsHaveMore(data.page < data.totalPages);
+        } catch (error) {
+            console.error('Error loading more bookings', error);
+            setLoadError('More booking requests could not be loaded. Please try again.');
+        } finally {
+            setLoadingMoreBookings(false);
+        }
+    };
 
     useEffect(() => {
         if (!user || user.role !== 'admin') {
@@ -68,7 +120,10 @@ const AdminDashboard = () => {
 
     const handleConfirmBooking = async (id, paymentStatus) => {
         try {
-            await api.put(`/bookings/${id}/confirm`, { paymentStatus });
+            const { data } = await api.put(`/bookings/${id}/confirm`, { paymentStatus });
+            if (!data.notificationSent) {
+                alert(data.message);
+            }
             fetchData();
         } catch (error) {
             alert(error.response?.data?.message || 'Error confirming pass');
@@ -105,26 +160,35 @@ const AdminDashboard = () => {
                 </button>
             </div>
 
+            {loadError && (
+                <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-center text-sm font-semibold text-red-700">
+                    <p>{loadError}</p>
+                    <button type="button" onClick={fetchData} className="mt-2 rounded-lg bg-white px-4 py-2 font-bold text-red-700 shadow-sm hover:bg-red-100">
+                        Try again
+                    </button>
+                </div>
+            )}
+
             {/* Admin Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-amber-100 flex items-center justify-between">
                     <div>
                         <p className="text-gray-400 text-xs font-black uppercase tracking-wider mb-1">Total Pass Revenue</p>
-                        <h3 className="text-3xl font-black text-emerald-600">₹{bookings.reduce((sum, b) => b.paymentStatus === 'paid' && b.status === 'confirmed' ? sum + (Number(b.amount) || 0) : sum, 0)}</h3>
+                        <h3 className="text-3xl font-black text-emerald-600">₹{summary.totalRevenue}</h3>
                     </div>
                     <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl font-bold shadow-sm">₹</div>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-amber-100 flex items-center justify-between">
                     <div>
                         <p className="text-gray-400 text-xs font-black uppercase tracking-wider mb-1">Confirmed Pass Holders</p>
-                        <h3 className="text-3xl font-black text-indigo-600">{new Set(bookings.filter(b => b.paymentStatus === 'paid' && b.status === 'confirmed').map(b => b.userId?._id).filter(Boolean)).size}</h3>
+                        <h3 className="text-3xl font-black text-indigo-600">{summary.confirmedPassHolders}</h3>
                     </div>
                     <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-xl font-bold shadow-sm">👤</div>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-amber-100 flex items-center justify-between">
                     <div>
                         <p className="text-gray-400 text-xs font-black uppercase tracking-wider mb-1">Pending Pass Requests</p>
-                        <h3 className="text-3xl font-black text-amber-600">{bookings.filter(b => b.status === 'pending').length}</h3>
+                        <h3 className="text-3xl font-black text-amber-600">{summary.pendingRequests}</h3>
                     </div>
                     <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-xl font-bold shadow-sm">⏳</div>
                 </div>
@@ -132,7 +196,7 @@ const AdminDashboard = () => {
 
             {/* Form for Creating Entry Pass / Food Pass / Event Schedule */}
             {showEventForm && (
-                <div className="bg-white p-8 rounded-3xl shadow-md border border-amber-200 mb-8 animate-fadeIn">
+                <div className="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-md border border-amber-200 mb-8 animate-fadeIn">
                     <h2 className="text-2xl font-black mb-6 text-gray-900 border-b border-amber-100 pb-3 flex items-center gap-2">
                         <FaTicketAlt className="text-amber-600" /> Add New Garba Pass / Event Schedule Item
                     </h2>
@@ -186,7 +250,7 @@ const AdminDashboard = () => {
                 {/* Garba Passes & Schedule List */}
                 <div className="flex flex-col">
                     <h2 className="text-2xl font-black mb-6 text-gray-900 flex items-center gap-3">
-                        <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-amber-100 text-amber-800 text-sm font-black">{events.length}</span>
+                        <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-amber-100 text-amber-800 text-sm font-black">{eventsTotal}</span>
                         All Garba Passes & Schedules
                     </h2>
                     <div className="bg-white rounded-2xl shadow-sm border border-amber-100 overflow-hidden">
@@ -213,12 +277,17 @@ const AdminDashboard = () => {
                             }
                         </ul>
                     </div>
+                    {eventsHaveMore && (
+                        <button type="button" disabled={loadingMoreEvents} onClick={loadMoreEvents} className="mt-3 rounded-xl bg-amber-600 px-5 py-3 font-bold text-white hover:bg-amber-700 disabled:opacity-60">
+                            {loadingMoreEvents ? 'Loading...' : 'Load more events'}
+                        </button>
+                    )}
                 </div>
 
                 {/* Pass Booking Requests Section */}
                 <div className="flex flex-col">
                     <h2 className="text-2xl font-black mb-6 text-gray-900 flex items-center gap-3">
-                        <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-amber-500 text-gray-950 text-sm font-black">{bookings.length}</span>
+                        <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-amber-500 text-gray-950 text-sm font-black">{bookingsTotal}</span>
                         Pass Booking Requests
                     </h2>
                     <div className="bg-white rounded-2xl shadow-sm border border-amber-100 overflow-hidden">
@@ -279,6 +348,11 @@ const AdminDashboard = () => {
                             }
                         </ul>
                     </div>
+                    {bookingsHaveMore && (
+                        <button type="button" disabled={loadingMoreBookings} onClick={loadMoreBookings} className="mt-3 rounded-xl bg-amber-600 px-5 py-3 font-bold text-white hover:bg-amber-700 disabled:opacity-60">
+                            {loadingMoreBookings ? 'Loading...' : 'Load more bookings'}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

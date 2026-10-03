@@ -9,15 +9,27 @@ const UserDashboard = () => {
     const navigate = useNavigate();
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
 
-    const fetchBookings = useCallback(async () => {
+    const fetchBookings = useCallback(async (requestedPage = 1) => {
+        if (requestedPage > 1) setLoadingMore(true);
         try {
-            const { data } = await api.get('/bookings/my');
-            setBookings(data);
+            const { data } = await api.get('/bookings/my', { params: { page: requestedPage, limit: 24 } });
+            setLoadError('');
+            setBookings(current => requestedPage === 1 ? data.items : [...current, ...data.items]);
+            setTotal(data.total);
+            setHasMore(data.page < data.totalPages);
+            setPage(data.page);
         } catch (error) {
             console.error('Error fetching Garba passes', error);
+            setLoadError('Your passes could not be loaded. Check your connection and try again.');
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     }, []);
 
@@ -59,12 +71,19 @@ const UserDashboard = () => {
 
             <div className="flex items-center justify-between mb-6 px-1">
                 <h2 className="text-xl sm:text-2xl font-black text-gray-900 flex items-center gap-3">
-                    <FaTicketAlt className="text-amber-600" /> My Garba & Food Passes ({bookings.length})
+                    <FaTicketAlt className="text-amber-600" /> My Garba & Food Passes ({total})
                 </h2>
             </div>
 
-            {bookings.length === 0 ? (
-                <div className="bg-white rounded-3xl shadow-sm p-12 text-center border border-amber-100">
+            {loadError ? (
+                <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-center text-sm font-semibold text-red-700">
+                    <p>{loadError}</p>
+                    <button type="button" onClick={fetchBookings} className="mt-2 rounded-lg bg-white px-4 py-2 font-bold text-red-700 shadow-sm hover:bg-red-100">
+                        Try again
+                    </button>
+                </div>
+            ) : bookings.length === 0 ? (
+                <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm p-5 sm:p-12 text-center border border-amber-100">
                     <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
                         <FaTicketAlt className="text-amber-400 text-3xl" />
                     </div>
@@ -130,6 +149,16 @@ const UserDashboard = () => {
                         </div>
                     ))}
                 </div>
+            )}
+            {!loadError && hasMore && (
+                <button
+                    type="button"
+                    disabled={loadingMore}
+                    onClick={() => fetchBookings(page + 1)}
+                    className="mx-auto mt-6 block rounded-xl bg-amber-600 px-6 py-3 font-bold text-white shadow-md hover:bg-amber-700 disabled:opacity-60"
+                >
+                    {loadingMore ? 'Loading...' : 'Load more passes'}
+                </button>
             )}
         </div>
     );
