@@ -176,8 +176,10 @@ const EventDetail = () => {
 
                         {showOTP && (
                             <div className="mb-4">
-                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-2">Enter OTP to Confirm Booking</label>
+                                <label htmlFor="booking-otp" className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-2">Enter OTP to Confirm Booking</label>
                                 <input
+                                    id="booking-otp"
+                                    name="otp"
                                     type="text"
                                     required
                                     placeholder="6-digit code"

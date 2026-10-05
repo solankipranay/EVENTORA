@@ -66,9 +66,12 @@ const Register = () => {
                 {!showOTP ? (
                     <>
                         <div>
-                            <label className="block text-xs font-bold uppercase text-gray-700 mb-2">Full Name</label>
+                            <label htmlFor="register-name" className="block text-xs font-bold uppercase text-gray-700 mb-2">Full Name</label>
                             <input
+                                id="register-name"
+                                name="name"
                                 type="text"
+                                autoComplete="name"
                                 required
                                 placeholder="Your full name"
                                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 transition shadow-sm font-medium text-gray-900"
@@ -77,9 +80,12 @@ const Register = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold uppercase text-gray-700 mb-2">Email Address</label>
+                            <label htmlFor="register-email" className="block text-xs font-bold uppercase text-gray-700 mb-2">Email Address</label>
                             <input
+                                id="register-email"
+                                name="email"
                                 type="email"
+                                autoComplete="email"
                                 required
                                 placeholder="name@example.com"
                                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 transition shadow-sm font-medium text-gray-900"
@@ -88,10 +94,14 @@ const Register = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold uppercase text-gray-700 mb-2">Password</label>
+                            <label htmlFor="register-password" className="block text-xs font-bold uppercase text-gray-700 mb-2">Password</label>
                             <input
+                                id="register-password"
+                                name="password"
                                 type="password"
+                                autoComplete="new-password"
                                 required
+                                minLength={6}
                                 placeholder="••••••••"
                                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 transition shadow-sm font-medium text-gray-900"
                                 value={password}
@@ -104,8 +114,10 @@ const Register = () => {
                         <p className="text-xs font-semibold text-emerald-800 bg-emerald-50 p-3 mb-4 rounded-xl border border-emerald-200">
                             An OTP code has been sent to your email. Please verify to complete sign up.
                         </p>
-                        <label className="block text-xs font-bold uppercase text-gray-700 mb-2">Verification Code (OTP)</label>
+                        <label htmlFor="register-otp" className="block text-xs font-bold uppercase text-gray-700 mb-2">Verification Code (OTP)</label>
                         <input
+                            id="register-otp"
+                            name="otp"
                             type="text"
                             required
                             placeholder="6-digit code"

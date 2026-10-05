@@ -72,7 +72,10 @@ const Home = () => {
 
                     <div className="w-full max-w-2xl mx-auto relative flex items-center shadow-2xl group">
                         <FaSearch className="absolute left-4 sm:left-6 text-amber-600 text-lg sm:text-xl group-focus-within:text-amber-500 transition-colors" />
+                        <label htmlFor="event-search" className="sr-only">Search passes and events</label>
                         <input
+                            id="event-search"
+                            name="search"
                             type="text"
                             placeholder="Search Garba passes, food thalis, star nights..."
                             className="w-full pl-11 sm:pl-16 pr-4 sm:pr-6 py-3 sm:py-5 rounded-full text-sm sm:text-lg text-gray-900 bg-white/95 backdrop-blur-md border-2 border-amber-400/50 focus:border-amber-500 focus:outline-none transition-all placeholder-gray-400 font-medium shadow-xl"

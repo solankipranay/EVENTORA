@@ -17,6 +17,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+if (!mongoUri && process.env.NODE_ENV === 'production') {
+    throw new Error('MONGODB_URI or MONGO_URI must be configured before starting the server in production');
+}
 
 //Routes
 app.use('/api/auth', authRoutes);
@@ -32,16 +36,17 @@ app.use((req, res, next) => {
     res.sendFile(path.join(clientBuildPath, 'index.html'));
 });
 
-//connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/eventora')
-.then(() => {
+const startServer = async () => {
+    await mongoose.connect(mongoUri || 'mongodb://localhost:27017/eventora');
     console.log('Connected to MongoDB');
-})
-.catch((error) => {
-    console.error('Error connecting to MongoDB:', error);
-});
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, ()=>{
-    console.log(`Server is running on port ${PORT}`);
-})
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+};
+
+startServer().catch((error) => {
+    console.error('Error connecting to MongoDB:', error);
+    process.exit(1);
+});

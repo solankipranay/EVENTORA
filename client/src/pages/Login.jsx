@@ -70,9 +70,12 @@ const Login = () => {
                 {!showOTP ? (
                     <>
                         <div>
-                            <label className="block text-xs font-bold uppercase text-gray-700 mb-2">Email Address</label>
+                            <label htmlFor="login-email" className="block text-xs font-bold uppercase text-gray-700 mb-2">Email Address</label>
                             <input
+                                id="login-email"
+                                name="email"
                                 type="email"
+                                autoComplete="username"
                                 required
                                 placeholder="name@example.com"
                                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition shadow-sm font-medium text-gray-900"
@@ -81,9 +84,12 @@ const Login = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold uppercase text-gray-700 mb-2">Password</label>
+                            <label htmlFor="login-password" className="block text-xs font-bold uppercase text-gray-700 mb-2">Password</label>
                             <input
+                                id="login-password"
+                                name="password"
                                 type="password"
+                                autoComplete="current-password"
                                 required
                                 placeholder="••••••••"
                                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition shadow-sm font-medium text-gray-900"
@@ -94,8 +100,10 @@ const Login = () => {
                     </>
                 ) : (
                     <div>
-                        <label className="block text-xs font-bold uppercase text-gray-700 mb-2">Verification Code (OTP)</label>
+                        <label htmlFor="login-otp" className="block text-xs font-bold uppercase text-gray-700 mb-2">Verification Code (OTP)</label>
                         <input
+                            id="login-otp"
+                            name="otp"
                             type="text"
                             required
                             placeholder="6-digit code"

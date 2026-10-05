@@ -202,42 +202,42 @@ const AdminDashboard = () => {
                     </h2>
                     <form onSubmit={handleCreateEvent} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-xs font-bold uppercase text-gray-600 mb-1">Title (e.g. VIP All-Night Pass, Royal Food Thali Pass)</label>
-                            <input required type="text" placeholder="Pass / Schedule Title" className="w-full border border-gray-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition font-medium" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
+                            <label htmlFor="event-title" className="block text-xs font-bold uppercase text-gray-600 mb-1">Title (e.g. VIP All-Night Pass, Royal Food Thali Pass)</label>
+                            <input id="event-title" name="title" required type="text" placeholder="Pass / Schedule Title" className="w-full border border-gray-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition font-medium" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold uppercase text-gray-600 mb-1">Category</label>
-                            <select required className="w-full border border-gray-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition font-medium bg-white" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>
+                            <label htmlFor="event-category" className="block text-xs font-bold uppercase text-gray-600 mb-1">Category</label>
+                            <select id="event-category" name="category" required className="w-full border border-gray-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition font-medium bg-white" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>
                                 <option value="Entry Pass">Entry Pass (VIP, Single, Couple, Group)</option>
                                 <option value="Food Pass">Food Pass (Thali, Farali, Stall Voucher)</option>
                                 <option value="Event Schedule">Event Schedule (Night 1 to 9 Special Lineup)</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-bold uppercase text-gray-600 mb-1">Date</label>
-                            <input required type="date" className="w-full border border-gray-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition font-medium" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} />
+                            <label htmlFor="event-date" className="block text-xs font-bold uppercase text-gray-600 mb-1">Date</label>
+                            <input id="event-date" name="date" required type="date" className="w-full border border-gray-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition font-medium" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold uppercase text-gray-600 mb-1">Venue / Stall Location</label>
-                            <input required type="text" placeholder="Location (e.g., Royal Palace Lawns, Food Pavilion)" className="w-full border border-gray-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition font-medium" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} />
+                            <label htmlFor="event-location" className="block text-xs font-bold uppercase text-gray-600 mb-1">Venue / Stall Location</label>
+                            <input id="event-location" name="location" required type="text" placeholder="Location (e.g., Royal Palace Lawns, Food Pavilion)" className="w-full border border-gray-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition font-medium" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold uppercase text-gray-600 mb-1">Total Pass Capacity / Seat Limit</label>
-                            <input required type="number" placeholder="Total Pass Quantity" className="w-full border border-gray-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition font-medium" value={formData.totalSeats} onChange={e => setFormData({ ...formData, totalSeats: e.target.value })} />
+                            <label htmlFor="event-total-seats" className="block text-xs font-bold uppercase text-gray-600 mb-1">Total Pass Capacity / Seat Limit</label>
+                            <input id="event-total-seats" name="totalSeats" required type="number" placeholder="Total Pass Quantity" className="w-full border border-gray-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition font-medium" value={formData.totalSeats} onChange={e => setFormData({ ...formData, totalSeats: e.target.value })} />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold uppercase text-gray-600 mb-1">Price in ₹ (0 for Free)</label>
-                            <input required type="number" placeholder="Pass Price in ₹" className="w-full border border-gray-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition font-medium" value={formData.ticketPrice} onChange={e => setFormData({ ...formData, ticketPrice: e.target.value })} />
+                            <label htmlFor="event-ticket-price" className="block text-xs font-bold uppercase text-gray-600 mb-1">Price in ₹ (0 for Free)</label>
+                            <input id="event-ticket-price" name="ticketPrice" required type="number" placeholder="Pass Price in ₹" className="w-full border border-gray-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition font-medium" value={formData.ticketPrice} onChange={e => setFormData({ ...formData, ticketPrice: e.target.value })} />
                         </div>
 
                         <div className="md:col-span-2">
-                            <label className="block text-xs font-bold uppercase text-gray-600 mb-1">Image URL</label>
-                            <input type="text" placeholder="Image URL (Unsplash or direct image link)" className="w-full border border-gray-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition font-medium" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} />
+                            <label htmlFor="event-image" className="block text-xs font-bold uppercase text-gray-600 mb-1">Image URL</label>
+                            <input id="event-image" name="image" type="text" placeholder="Image URL (Unsplash or direct image link)" className="w-full border border-gray-200 px-4 py-3 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition font-medium" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} />
                         </div>
 
                         <div className="md:col-span-2">
-                            <label className="block text-xs font-bold uppercase text-gray-600 mb-1">Pass / Event Description</label>
-                            <textarea required placeholder="Detailed description of what's included in this pass or night schedule..." className="w-full border border-gray-200 px-4 py-3 rounded-xl h-28 focus:ring-2 focus:ring-amber-500 outline-none transition font-medium" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
+                            <label htmlFor="event-description" className="block text-xs font-bold uppercase text-gray-600 mb-1">Pass / Event Description</label>
+                            <textarea id="event-description" name="description" required placeholder="Detailed description of what's included in this pass or night schedule..." className="w-full border border-gray-200 px-4 py-3 rounded-xl h-28 focus:ring-2 focus:ring-amber-500 outline-none transition font-medium" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
                         </div>
                         <button type="submit" className="md:col-span-2 bg-gradient-to-r from-amber-500 to-red-600 text-white font-black py-4 mt-2 rounded-xl hover:from-amber-600 hover:to-red-700 transition shadow-lg shadow-amber-500/20">
                             Publish Garba Pass / Schedule Item
