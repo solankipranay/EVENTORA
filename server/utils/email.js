@@ -1,21 +1,17 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const dotenv = require('dotenv');
 const path = require('path');
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const fromEmail = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
 const sendBookingEmail = async (userEmail, userName, eventTitle) => {
     try {
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
+        await resend.emails.send({
+            from: fromEmail,
             to: userEmail,
             subject: `Garba Pass Confirmed: ${eventTitle}`,
             html: `
@@ -23,8 +19,7 @@ const sendBookingEmail = async (userEmail, userName, eventTitle) => {
         <p>Your pass booking for <strong>${eventTitle}</strong> at <strong>The Rangilo Garba Mahotsav</strong> is successfully confirmed!</p>
         <p>Thank you for booking with us. See you at the Garba Arena!</p>
       `
-        };
-        await transporter.sendMail(mailOptions);
+        });
         return true;
     } catch (error) {
         console.error('Booking confirmation email delivery failed:', error);
@@ -39,8 +34,8 @@ const sendOTPEmail = async (userEmail, otp, type) => {
             ? 'Please use the following OTP code to verify your new account at The Rangilo Garba Mahotsav.'
             : 'Please use the following OTP code to verify and confirm your Garba pass booking.';
 
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
+        await resend.emails.send({
+            from: fromEmail,
             to: userEmail,
             subject: title,
             html: `
@@ -53,12 +48,11 @@ const sendOTPEmail = async (userEmail, otp, type) => {
                     <p style="color: #999; font-size: 12px;">This code expires in 5 minutes. If you didn't request this code, please ignore this email.</p>
                 </div>
             `
-        };
-        await transporter.sendMail(mailOptions);
+        });
     } catch (error) {
         console.error('Verification email delivery failed:', error);
         throw new Error('Unable to send verification email');
     }
 };
 
-module.exports = { sendBookingEmail, sendOTPEmail };
+module.exports = { sendBookingEmail, sendOTPEmail };
